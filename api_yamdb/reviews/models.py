@@ -64,7 +64,6 @@ class Title(models.Model):
     )
     genre = models.ManyToManyField(
         Genre,
-        through='GenreConnect',
         related_name='genre',
         verbose_name='Жанр'
     )
