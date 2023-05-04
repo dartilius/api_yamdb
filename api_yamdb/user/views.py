@@ -1,10 +1,11 @@
-from django.contrib.auth.hashers import make_password
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, filters, status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import api_view, action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import AccessToken
 from django.core.mail import send_mail
 
 from .models import User
@@ -72,7 +73,7 @@ def signup(request):
         User.objects.create(
             username=request.data['username'],
             email=request.data['email'],
-            password=make_password(str(code))
+            confirmation_code=code
         )
     if 'username' not in request.data or 'email' not in request.data:
         return Response(
@@ -92,7 +93,9 @@ def signup(request):
             username=request.data['username'],
             email=request.data['email']
         )
-        user.set_password(str(code))
+        user.confirmation_code = code
+        user.save()
+
     send_mail(
         'Confirmation Code',
         f'{code}',
@@ -103,4 +106,29 @@ def signup(request):
     return Response(
         data=request.data,
         status=status.HTTP_200_OK
+    )
+
+
+@api_view(['POST'])
+def get_token(request):
+    if (
+            not 'username' in request.data
+            or not 'confirmation_code' in request.data
+    ):
+        return Response(
+            {'message': 'В запросе должны быть '
+                        'поля username и confirmation_code'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    username = request.data.get('username')
+    code = request.data.get('confirmation_code')
+    user = get_object_or_404(User, username=username)
+    if user.confirmation_code == code:
+        return Response(
+            {'Token': str(AccessToken.for_user(user))},
+            status=status.HTTP_200_OK
+        )
+    return Response(
+        {'message': 'Неправильный код подтверждения'},
+        status=status.HTTP_400_BAD_REQUEST
     )

@@ -44,3 +44,8 @@ class User(AbstractUser):
         choices=ROLES,
         default='user'
     )
+    confirmation_code = models.PositiveSmallIntegerField(
+        verbose_name='Код подтверждения',
+        null=True,
+        blank=True
+    )
