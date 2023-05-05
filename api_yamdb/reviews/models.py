@@ -90,7 +90,7 @@ class Review(models.Model):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='review_title',
+        related_name='reviews',
         verbose_name='Произведение'
     )
     author = models.ForeignKey(
@@ -105,9 +105,8 @@ class Review(models.Model):
         db_index=True
     )
     text = models.TextField()
-    score = models.IntegerField(
+    score = models.PositiveSmallIntegerField(
         'Оценка',
-        default=0,
         validators=[
             MaxValueValidator(10),
             MinValueValidator(1)
@@ -117,11 +116,15 @@ class Review(models.Model):
     class Meta:
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        ordering = ['-pub_date']
         constraints = [
             models.UniqueConstraint(
-                fields=['author', 'title'], name="unique_review")
+                fields=('title', 'author'),
+                name='unique_author_title'
+            )
         ]
+
+    def __str__(self):
+        return f'{self.text} - {self.score}'
 
 
 class Comment(models.Model):
@@ -129,7 +132,7 @@ class Comment(models.Model):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        related_name='review_comment',
+        related_name='comments',
         verbose_name='Отзыв'
     )
     author = models.ForeignKey(
@@ -148,5 +151,9 @@ class Comment(models.Model):
         verbose_name='Текст комментария'
     )
 
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
     def __str__(self):
-        return self.author
+        return self.text
