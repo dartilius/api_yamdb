@@ -67,7 +67,6 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Review."""
-
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
@@ -92,22 +91,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         title = get_object_or_404(Title, id=title_id)
         if request.method == 'POST':
             if title.reviews.filter(title=title_id, author=author).exists():
-                raise ValidationError('only one review to title')
+                raise ValidationError('Один отзыв на произведение!')
         return data
-
-    def validate_score(self, value):
-        """Проверка поставленной оценки."""
-
-        if 0 >= value >= 10:
-            raise serializers.ValidationError(
-                'Оценка должна быть от 0 до 10.'
-            )
-        return value
 
 
 class CommentSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Comment."""
-
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
