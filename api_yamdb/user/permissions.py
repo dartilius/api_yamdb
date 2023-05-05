@@ -24,17 +24,46 @@ class IsAdminOrSuperUser(permissions.BasePermission):
 
 
 class IsAuthorOrModeratorOrReadOnly(permissions.BasePermission):
-    """Права доступа для авторов."""
+    """Права доступа для автора."""
 
     def has_permission(self, request, view):
         return (
-            request.method in permissions.SAFE_METHODS
-            or request.user.is_authenticated
+                request.method in permissions.SAFE_METHODS
+                or request.user.is_authenticated
         )
 
     def has_object_permission(self, request, view, obj):
         return (
-                obj.author == request.user
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_authenticated
+            and (
+                request.user == obj.author
                 or request.user.role == 'moderator'
+                or request.user.role == 'admin'
+                or request.user.is_superuser
+            )
         )
 
+
+class IsAdminOrSuperUserOrReadOnly(permissions.BasePermission):
+    """Права доступа администратора и суперпользователя."""
+
+    def has_permission(self, request, view):
+        return (
+                request.method in permissions.SAFE_METHODS
+                or request.user.is_authenticated
+                and (
+                        request.user.role == 'admin'
+                        or request.user.is_superuser
+                )
+        )
+
+    def has_object_permission(self, request, view, obj):
+        return (
+                request.method in permissions.SAFE_METHODS
+                or request.user.is_authenticated
+                and (
+                        request.user.role == 'admin'
+                        or request.user.is_superuser
+                )
+        )
