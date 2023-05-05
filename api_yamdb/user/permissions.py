@@ -37,3 +37,4 @@ class IsAuthorOrModeratorOrReadOnly(permissions.BasePermission):
                 obj.author == request.user
                 or request.user.role == 'moderator'
         )
+

@@ -4,7 +4,8 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import mixins
 from rest_framework import filters
 
-from user.permissions import (IsAdminOrSuperUser)
+from api.filters import FilterTitle
+from user.permissions import (IsAdminOrSuperUser, IsAuthorOrModeratorOrReadOnly)
 from reviews.models import Genre, Category, Title, Review
 from .serializers import (GenreSerializer,
                           CategorySerializer,
@@ -24,9 +25,10 @@ class CreateListDestroyViewSet(mixins.CreateModelMixin,
 class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAdminOrSuperUser,)
+    permission_classes = (IsAuthorOrModeratorOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    search_fields = ('name', 'slug')
+    filterset_fields = ('name', 'slug')
     lookup_field = 'slug'
 
 
@@ -34,9 +36,10 @@ class CategoryViewSet(CreateListDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    search_fields = ('name', 'slug')
+    filterset_fields = ('name', 'slug')
     lookup_field = 'slug'
-    permission_classes = (IsAdminOrSuperUser,)
+    permission_classes = (IsAuthorOrModeratorOrReadOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -44,7 +47,10 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (IsAdminOrSuperUser,)
+    permission_classes = (IsAuthorOrModeratorOrReadOnly,)
+    filter_backends = (filters.SearchFilter,)
+    filterset_class = FilterTitle
+    search_fields = ('name', 'year', 'genre__slug', 'category__slug')
 
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PATCH',):
@@ -54,7 +60,7 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = (IsAdminOrSuperUser, )
+    permission_classes = (IsAdminOrSuperUser,)
 
     def get_title(self):
         return get_object_or_404(Title, id=self.kwargs.get('title_id'))
@@ -68,7 +74,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
-    permission_classes = (IsAdminOrSuperUser, )
+    permission_classes = (IsAdminOrSuperUser,)
 
     def get_review(self):
         return get_object_or_404(
