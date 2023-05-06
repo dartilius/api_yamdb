@@ -31,7 +31,7 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         fields = (
-            'id', 'name', 'year', 'description', 'genre', 'category')
+            'id', 'name', 'year', 'rating', 'description', 'genre', 'category')
         model = Title
 
     def get_rating(self, obj):
