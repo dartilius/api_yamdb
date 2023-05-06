@@ -1,36 +1,43 @@
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import mixins
 from rest_framework import filters
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
+from api.filters import FilterTitle
 from user.permissions import (
-    IsAdminOrSuperUser,
     IsAuthorOrModeratorOrReadOnly,
+    IsAdminOrSuperUserOrReadOnly
 )
 from reviews.models import Genre, Category, Title, Review
-from .serializers import (GenreSerializer,
-                          CategorySerializer,
-                          TitleSerializer,
-                          TitleCreateSerializer,
-                          ReviewSerializer,
-                          CommentSerializer)
+from .serializers import (
+    GenreSerializer,
+    CategorySerializer,
+    TitleSerializer,
+    TitleCreateSerializer,
+    ReviewSerializer,
+    CommentSerializer
+)
 
 
-class CreateListDestroyViewSet(mixins.CreateModelMixin,
-                               mixins.ListModelMixin,
-                               mixins.DestroyModelMixin,
-                               viewsets.GenericViewSet,):
+class CreateListDestroyViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     pass
 
 
 class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (IsAdminOrSuperUser,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    search_fields = ('name', 'slug')
+    filterset_fields = ('name', 'slug')
     lookup_field = 'slug'
 
 
@@ -38,9 +45,10 @@ class CategoryViewSet(CreateListDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('name',)
+    search_fields = ('name', 'slug')
+    filterset_fields = ('name', 'slug')
     lookup_field = 'slug'
-    permission_classes = (IsAdminOrSuperUser,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -48,7 +56,10 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
     pagination_class = LimitOffsetPagination
-    permission_classes = (IsAdminOrSuperUser,)
+    permission_classes = (IsAdminOrSuperUserOrReadOnly,)
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    filterset_class = FilterTitle
+    search_fields = ('name', 'year', 'genre__slug', 'category__slug')
 
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PATCH',):
