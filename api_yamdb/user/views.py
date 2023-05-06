@@ -81,8 +81,8 @@ def signup(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     elif not User.objects.filter(
-        username=request.data['username'],
-        email=request.data['email']
+            username=request.data['username'],
+            email=request.data['email']
     ).count():
         return Response(
             serializer.errors,
@@ -111,10 +111,8 @@ def signup(request):
 
 @api_view(['POST'])
 def get_token(request):
-    if (
-            not 'username' in request.data
-            or not 'confirmation_code' in request.data
-    ):
+    if ('username' not in request.data
+            or 'confirmation_code' not in request.data):
         return Response(
             {'message': 'В запросе должны быть '
                         'поля username и confirmation_code'},
