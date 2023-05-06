@@ -104,7 +104,7 @@ TITLE_GENRE_MATRIX = (
         {
             'id': 'id',
             'title_id': 'Title.id',
-            'genre_id': 'Genre.id', 
+            'genre_id': 'Genre.id'
         }
     )
 )
@@ -183,7 +183,6 @@ def import_from_csv(path_csv=None, models_files=None, matrix=None):
                 count += 1
             print(f'Всего в файле {count} строк.',
                   f'В БД добавлено {obj_count} записей.')
-
 
     model, file_struct = TITLE_GENRE_MATRIX
     file_name = ''.join((BASE_DIR, path_csv, file_struct[0], CSV_EXT))
