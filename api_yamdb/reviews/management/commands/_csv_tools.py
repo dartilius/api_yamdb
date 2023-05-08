@@ -4,7 +4,6 @@ from django.apps import apps
 from django.conf import settings
 from django.db.models import Avg
 
-
 BASE_DIR = settings.BASE_DIR
 
 PATH_CSV = '/static/data/'
@@ -18,7 +17,6 @@ MODELS_FILES = {
     'GenreTitle': 'genre_title',
 }
 CSV_EXT = '.csv'
-
 
 IMPORT_MATRIX = (
     (
@@ -125,8 +123,48 @@ for model in MODEL_LIST:
     MODEL_LINKS[model_key] = model_link
 
 
+def read_csv_file(file_name):
+    "Функция для чтения CSV-файла."
+    with open(file_name, encoding='utf-8') as r_file:
+        file_reader = csv.reader(r_file, delimiter=",")
+        return list(file_reader)
+
+
+def get_file_fields(file_struct):
+    "Получения списка полей файла и связанных моделей."
+    file_fields = file_struct[0]
+    bd_fields = [field.replace('_id', '') for field in file_fields]
+    func_fields = []
+    for field_name in file_fields:
+        bd_name = file_struct[1][field_name]
+        if len(bd_name.split('.id')) == 2:
+            rel_model_name = bd_name.split('.id')[0]
+            rel_model = MODEL_LINKS[rel_model_name]
+            func_fields.append(rel_model)
+        else:
+            func_fields.append(None)
+    return file_fields, bd_fields, func_fields
+
+
+def create_objects(model, model_link, bd_fields, func_fields, line_fields):
+    "Cоздание объектов в БД."
+    object_fields = dict()
+    for e in range(len(line_fields)):
+        if func_fields[e]:
+            object_fields[bd_fields[e]],
+            _ = func_fields[e].objects.get_or_create(pk=line_fields[e])
+        else:
+            object_fields[bd_fields[e]] = line_fields[e]
+    try:
+        model_link.objects.create(**object_fields)
+        return True
+    except Exception as e:
+        print(f'Ошибка создания записи: {e}')
+        return False
+
+
 def import_from_csv(path_csv=None, models_files=None, matrix=None):
-    """Импорт в БД данных из файлов .csv."""
+    "Основная функция импорта данных из CSV-файлов."
     if path_csv is None:
         path_csv = PATH_CSV
     if models_files is None:
@@ -136,84 +174,21 @@ def import_from_csv(path_csv=None, models_files=None, matrix=None):
 
     for model_file in matrix:
         model, file_struct = model_file
-        file_name = ''.join(
-            (BASE_DIR, path_csv, file_struct[0], CSV_EXT)
-        )
+        file_name = ''.join((BASE_DIR, path_csv, file_struct[0], CSV_EXT))
         print('\n\nВзят в работу файл: ', file_name)
 
-        with open(file_name, encoding='utf-8') as r_file:
-            file_reader = csv.reader(r_file, delimiter=",")
-            count = 0
-            obj_count = 0
-
-            for row in file_reader:
-                if count == 0:
-                    print(f'Файл содержит столбцы: {", ".join(row)}')
-                    file_fields = row
-                    bd_fields = list()
-                    for field_name in file_fields:
-                        bd_fields.append(field_name.replace('_id', ''))
-                    func_fields = list()
-                    for field_name in file_fields:
-                        bd_name = file_struct[1][field_name]
-                        if len(bd_name.split('.id')) == 2:
-                            rel_model_name = bd_name.split('.id')[0]
-                            rel_model = MODEL_LINKS[rel_model_name]
-                            func_fields.append(rel_model)
-                        else:
-                            func_fields.append(None)
-                else:
-                    line_fields = row
-                    object_fields = dict()
-                    for e in range(len(row)):
-                        if func_fields[e]:
-                            object_fields[bd_fields[e]], _ = \
-                                func_fields[e].objects.get_or_create(
-                                    pk=line_fields[e])
-                        else:
-                            object_fields[bd_fields[e]] = line_fields[e]
-
-                    try:
-                        model_link = MODEL_LINKS[model]
-                        model_link.objects.create(**object_fields)
-                        obj_count += 1
-                    except Exception as e:
-                        print(f'Ошибка создания записи: {e}')
-                        exit
-                count += 1
-            print(f'Всего в файле {count} строк.',
-                  f'В БД добавлено {obj_count} записей.')
-
-    model, file_struct = TITLE_GENRE_MATRIX
-    file_name = ''.join((BASE_DIR, path_csv, file_struct[0], CSV_EXT))
-    print('\n\nВзят в работу файл: ', file_name)
-    with open(file_name, encoding='utf-8') as r_file:
-        file_reader = csv.reader(r_file, delimiter=",")
-        count = 0
+        file_data = read_csv_file(file_name)
+        count = len(file_data)
         obj_count = 0
 
-        for row in file_reader:
-            if count == 0:
-                print(f'Файл содержит столбцы: {", ".join(row)}')
-                file_fields = row
-                bd_fields = list()
-                for field_name in file_fields:
-                    bd_fields.append(field_name.replace('_id', ''))
+        file_fields, bd_fields, func_fields = get_file_fields(file_struct)
 
-            else:
-                line_fields = row
-                obj_fields = dict(zip(bd_fields, line_fields))
-                model_title = MODEL_LINKS[model]
-                title = model_title.objects.get(pk=obj_fields['title'])
-                model_genre = MODEL_LINKS['Genre']
-                genre = model_genre.objects.get(pk=obj_fields['genre'])
-                try:
-                    title.genre.add(genre)
-                    obj_count += 1
-                except Exception as e:
-                    print(f'Ошибка создания записи: {e}')
-                    exit
-            count += 1
+        for i in range(1, count):
+            line_fields = file_data[i]
+            if create_objects(model, MODEL_LINKS[model], bd_fields,
+                              func_fields, line_fields):
+                obj_count += 1
+
         print(f'Всего в файле {count} строк.',
               f'В БД добавлено {obj_count} записей.')
 
