@@ -1,7 +1,6 @@
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
@@ -74,9 +73,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
     score = serializers.IntegerField(
         required=True,
-        validators=(
-            MaxValueValidator(10),
-            MinValueValidator(1))
     )
 
     class Meta:
