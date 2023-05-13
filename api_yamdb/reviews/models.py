@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
-from .validators import max_value_current_year
+
+from .validators import current_year
 from user.models import User
 
 
@@ -17,12 +18,12 @@ class Category(models.Model):
         verbose_name='Слаг категории'
     )
 
-    def __str__(self) -> str:
-        return self.name
-
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Genre(models.Model):
@@ -37,12 +38,12 @@ class Genre(models.Model):
         verbose_name='Слаг жанра'
     )
 
-    def __str__(self) -> str:
-        return self.name
-
     class Meta:
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Title(models.Model):
@@ -56,7 +57,8 @@ class Title(models.Model):
         verbose_name='Год создания',
         validators=[
             MinValueValidator(0),
-            max_value_current_year]
+            MaxValueValidator(current_year)
+        ]
     )
     description = models.TextField(
         verbose_name='Описание произведения',
@@ -75,12 +77,12 @@ class Title(models.Model):
         verbose_name='Категория',
     )
 
-    def __str__(self) -> str:
-        return self.name
-
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Review(models.Model):
