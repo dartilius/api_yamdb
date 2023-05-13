@@ -57,6 +57,7 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Review."""
+    
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
@@ -64,9 +65,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
     score = serializers.IntegerField(
         required=True,
-        validators=(
-            MaxValueValidator(10),
-            MinValueValidator(1))
     )
 
     class Meta:
@@ -87,6 +85,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Comment."""
+    
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
