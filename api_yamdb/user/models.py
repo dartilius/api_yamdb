@@ -5,14 +5,17 @@ from django.db import models
 
 class User(AbstractUser):
     """Пользователь."""
+    ADMIN = 'admin'
+    MODERATOR = 'moderator'
+    USER = 'user'
+
+    ROLES = (
+        (USER, 'Пользователь'),
+        (MODERATOR, 'Модератор'),
+        (ADMIN, 'Администратор'),
+    )
 
     username_validator = UnicodeUsernameValidator()
-
-    ROLES = [
-        ('user', 'Пользователь'),
-        ('moderator', 'Модератор'),
-        ('admin', 'Администратор'),
-    ]
 
     username = models.CharField(
         max_length=150,
@@ -49,3 +52,11 @@ class User(AbstractUser):
         null=True,
         blank=True
     )
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
+
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
