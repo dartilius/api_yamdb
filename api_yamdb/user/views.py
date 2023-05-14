@@ -1,3 +1,4 @@
+from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, filters, status
 from django_filters.rest_framework import DjangoFilterBackend
@@ -10,8 +11,12 @@ from django.core.mail import send_mail
 
 from .models import User
 from .permissions import IsAdminOrSuperUser
-from .serializers import UserSerializer, ConfirmationSerializer, MeSerializer
-import random
+from .serializers import (
+    UserSerializer,
+    ConfirmationSerializer,
+    MeSerializer,
+    TokenSerializer
+)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -40,13 +45,10 @@ class UserViewSet(viewsets.ModelViewSet):
                 data=request.data,
                 partial=True
             )
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
         serializer = MeSerializer(
             request.user,
             data=request.data,
@@ -63,39 +65,12 @@ class UserViewSet(viewsets.ModelViewSet):
 def signup(request):
     """Регистрация пользователей."""
     serializer = ConfirmationSerializer(data=request.data)
-    code = random.randint(10000, 99999)
-    if serializer.is_valid():
-        if request.data['username'] == 'me':
-            return Response(
-                {'message': 'Username "me" недопустим.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        User.objects.create(
-            username=request.data['username'],
-            email=request.data['email'],
-            confirmation_code=code
-        )
-    if 'username' not in request.data or 'email' not in request.data:
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    elif not User.objects.filter(
-            username=request.data['username'],
-            email=request.data['email']
-    ).count():
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    else:
-        user = User.objects.get(
-            username=request.data['username'],
-            email=request.data['email']
-        )
-        user.confirmation_code = code
-        user.save()
-
+    serializer.is_valid(raise_exception=True)
+    user, _ = User.objects.get_or_create(
+        username=request.data['username'],
+        email=request.data['email']
+    )
+    code = default_token_generator.make_token(user)
     send_mail(
         'Confirmation Code',
         f'{code}',
@@ -111,22 +86,11 @@ def signup(request):
 
 @api_view(['POST'])
 def get_token(request):
-    if ('username' not in request.data
-            or 'confirmation_code' not in request.data):
-        return Response(
-            {'message': 'В запросе должны быть '
-                        'поля username и confirmation_code'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    serializer = TokenSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
     username = request.data.get('username')
-    code = request.data.get('confirmation_code')
     user = get_object_or_404(User, username=username)
-    if user.confirmation_code == code:
-        return Response(
-            {'Token': str(AccessToken.for_user(user))},
-            status=status.HTTP_200_OK
-        )
     return Response(
-        {'message': 'Неправильный код подтверждения'},
-        status=status.HTTP_400_BAD_REQUEST
+        {'Token': str(AccessToken.for_user(user))},
+        status=status.HTTP_200_OK
     )
