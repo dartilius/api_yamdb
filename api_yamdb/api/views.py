@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Avg
 from rest_framework import viewsets
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework import mixins
@@ -28,10 +29,13 @@ class CreateListDestroyViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet,
 ):
+    """Вьюсет для CreateListDestroyGenericSerializer."""
     pass
 
 
 class GenreViewSet(CreateListDestroyViewSet):
+    """Вьюсет для GenreSerializer."""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrSuperUserOrReadOnly,)
@@ -42,6 +46,8 @@ class GenreViewSet(CreateListDestroyViewSet):
 
 
 class CategoryViewSet(CreateListDestroyViewSet):
+    """Вьюсет для CategorySerializer."""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
@@ -52,6 +58,7 @@ class CategoryViewSet(CreateListDestroyViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
+    """Вьюсет для TitleSerializer."""
 
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
@@ -65,6 +72,14 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.request.method in ('POST', 'PATCH',):
             return TitleCreateSerializer
         return TitleSerializer
+
+    def get_queryset(self):
+        if self.action in ('list', 'retrieve'):
+            queryset = (Title.objects.prefetch_related('reviews').all().
+                        annotate(rating=Avg('reviews__score')).
+                        order_by('name'))
+            return queryset
+        return Title.objects.all()
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

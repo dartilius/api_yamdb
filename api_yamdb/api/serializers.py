@@ -1,6 +1,4 @@
-from django.utils import timezone
 from django.shortcuts import get_object_or_404
-from django.db.models import Avg
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
@@ -10,6 +8,7 @@ from user.models import User
 
 
 class GenreSerializer(serializers.ModelSerializer):
+    """Серилизатор для модели Genre."""
 
     class Meta:
         fields = ('name', 'slug')
@@ -17,6 +16,7 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """Серилизатор для модели Category."""
 
     class Meta:
         fields = ('name', 'slug')
@@ -24,22 +24,20 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
+    """Серилизатор для модели Title."""
 
     genre = GenreSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
-    rating = serializers.SerializerMethodField()
+    rating = serializers.IntegerField()
 
     class Meta:
         fields = (
             'id', 'name', 'year', 'rating', 'description', 'genre', 'category')
         model = Title
 
-    def get_rating(self, obj):
-        avg = Review.objects.filter(title=obj.id).aggregate(Avg('score'))
-        return avg['score__avg']
-
 
 class TitleCreateSerializer(serializers.ModelSerializer):
+    """Серилизатор для модели TitleCreate."""
 
     category = serializers.SlugRelatedField(
         slug_field='slug',
@@ -56,17 +54,10 @@ class TitleCreateSerializer(serializers.ModelSerializer):
             'id', 'name', 'year', 'description', 'genre', 'category')
         model = Title
 
-        def validate_year(self, value):
-            year_now = timezone.now.year
-            if value <= 0 or value > year_now:
-                raise serializers.ValidationError(
-                    'Год создания записи не должен превышать текущий.'
-                )
-            return value
-
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Review."""
+    
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
@@ -74,9 +65,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
     score = serializers.IntegerField(
         required=True,
-        validators=(
-            MaxValueValidator(10),
-            MinValueValidator(1))
     )
 
     class Meta:
@@ -97,6 +85,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Comment."""
+    
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
