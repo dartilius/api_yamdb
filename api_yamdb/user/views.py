@@ -50,11 +50,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         serializer = MeSerializer(
-            request.user,
-            data=request.data,
-            partial=True
+            request.user
         )
-        serializer.is_valid(raise_exception=True)
         return Response(
             serializer.data,
             status=status.HTTP_200_OK
