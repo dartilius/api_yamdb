@@ -27,25 +27,29 @@ class ConfirmationSerializer(serializers.Serializer):
     email = serializers.EmailField(max_length=254)
 
     def validate(self, data):
-        if data['username'] == 'me':
-            raise serializers.ValidationError('username не может быть "me"')
-        if not User.objects.filter(
+        if User.objects.filter(
             username=data['username'],
             email=data['email']
         ).exists():
-            if User.objects.filter(
+            return data
+        if User.objects.filter(
                 username=data['username']
-            ).exists():
-                raise serializers.ValidationError(
-                    'Пользователь с таким username уже существует.'
-                )
-            if User.objects.filter(
+        ).exists():
+            raise serializers.ValidationError(
+                'Пользователь с таким username уже существует.'
+            )
+        if User.objects.filter(
                 email=data['email']
-            ).exists():
-                raise serializers.ValidationError(
-                    'Пользователь с таким email уже существует.'
-                )
+        ).exists():
+            raise serializers.ValidationError(
+                'Пользователь с таким email уже существует.'
+            )
         return data
+
+    def validate_username(self, value):
+        if value == 'me':
+            raise serializers.ValidationError('username не может быть "me"')
+        return value
 
 
 class MeSerializer(serializers.ModelSerializer):
@@ -76,10 +80,11 @@ class TokenSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         user = get_object_or_404(User, username=data['username'])
-        if not default_token_generator.check_token(
-                user,
-                data['confirmaion_code']
-        ):
+        valid_code = default_token_generator.check_token(
+            user,
+            data['confirmaion_code']
+        )
+        if not valid_code:
             raise serializers.ValidationError(
                 'Неправильный код подтверждения.'
             )
