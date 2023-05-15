@@ -30,7 +30,6 @@ class CreateListDestroyViewSet(
     viewsets.GenericViewSet,
 ):
     """Вьюсет для CreateListDestroyGenericSerializer."""
-    pass
 
 
 class GenreViewSet(CreateListDestroyViewSet):
@@ -60,7 +59,9 @@ class CategoryViewSet(CreateListDestroyViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     """Вьюсет для TitleSerializer."""
 
-    queryset = Title.objects.all()
+    queryset = (Title.objects.all().
+                annotate(rating=Avg('reviews__score')).
+                order_by('name'))
     serializer_class = TitleSerializer
     pagination_class = LimitOffsetPagination
     permission_classes = (IsAdminOrSuperUserOrReadOnly,)
@@ -72,14 +73,6 @@ class TitleViewSet(viewsets.ModelViewSet):
         if self.request.method in ('POST', 'PATCH',):
             return TitleCreateSerializer
         return TitleSerializer
-
-    def get_queryset(self):
-        if self.action in ('list', 'retrieve'):
-            queryset = (Title.objects.prefetch_related('reviews').all().
-                        annotate(rating=Avg('reviews__score')).
-                        order_by('name'))
-            return queryset
-        return Title.objects.all()
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
