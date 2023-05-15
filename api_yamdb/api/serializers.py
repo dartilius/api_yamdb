@@ -1,5 +1,4 @@
 from django.shortcuts import get_object_or_404
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
@@ -57,14 +56,11 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Review."""
-    
+
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
         slug_field='username'
-    )
-    score = serializers.IntegerField(
-        required=True,
     )
 
     class Meta:
@@ -85,7 +81,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     """Серилизатор для модели Comment."""
-    
+
     author = serializers.SlugRelatedField(
         default=serializers.CurrentUserDefault(),
         queryset=User.objects.all(),
